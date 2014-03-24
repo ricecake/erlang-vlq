@@ -1,0 +1,12 @@
+{application, vlq,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { vlq_app, []}},
+  {env, []}
+ ]}.
