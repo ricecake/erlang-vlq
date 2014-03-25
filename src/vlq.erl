@@ -1,8 +1,8 @@
 -module(vlq).
 
--export([encode/1, decode/1, test/2]).
+-export([encode/1, decode/1]).
 
-encode(Integer) when is_integer(Integer) -> doEncode(<<Integer>>, <<>>);
+encode(Integer) when is_integer(Integer); Integer >= 0 -> doEncode(binary:encode_unsigned(Integer), <<>>);
 encode(Binary) when is_binary(Binary) -> doEncode(Binary, <<>>);
 encode(List)  when is_list(List) -> false.
 
@@ -12,18 +12,19 @@ decode(List)  when is_list(List) -> false.
 
 %%%%%%%%%%%%%% Private Methods %%%%%%%%%%%%%%%%%%%
 
-test(<<>>, Accum) -> Accum;
-test(Binary, Accum) when bit_size(Binary) > 6 -> io:format("~p~n",[{Binary, bit_size(Binary), Accum}]), Size = bit_size(Binary)-7, <<Rest:Size/bitstring, Term:7/bitstring>> = Binary, test(Rest, [Term | Accum]);
-test(Binary, Accum) when bit_size(Binary) < 7 -> 
-	Size = 7-bit_size(Binary), 
-	io:format("~p~n",[{Binary, Size, Accum}]), 
-	test(<<>>, [<<0:Size/bitstring, Binary/bitstring>>|Accum]).
+doEncode(Binary, Accum) -> List = chunk(Binary, []), mark(List, Accum).
 
-%doEncode(<<Term:7/bitstring, Rest/bitstring>>, <<>>) -> io:format("~p~n",[{Term, Rest}]).
+mark([Last], Accum) -> << Accum/bitstring, 0:1, Last:7/bitstring >>;
+mark([<<0:7>> | Rest], Accum) -> mark(Rest, Accum);
+mark([Item | Rest], Accum) -> mark(Rest, << Accum/bits, 1:1, Item:7/bitstring >>).
 
-doEncode(<<>>, Binary) -> Binary;
-doEncode(<<0:8/bitstring,    Rest/bitstring>>, <<>>)  -> doEncode(Rest/bitstring, <<>>);
-doEncode(<<0:1/bitstring, Term:7/bitstring, Rest/bitstring>>, <<>>)  -> doEncode(Rest/bitstring, <<1:1, Term:7/bitstring>>);
-doEncode(<<Term:7/bitstring>>, Binary)  -> <<Binary/bitstring, 0:1, Term:7/bitstring>>;
-doEncode(<<Term:7/bitstring, Rest/bitstring>>, <<>>)  -> doEncode(Rest, <<1:1, Term:7/bitstring>>);
-doEncode(<<Term:7/bitstring, Rest/bitstring>>, Accum) -> doEncode(Rest, <<Accum/bitstring, 0:1, Term:7/bitstring>>).
+chunk(<<>>, Accum) -> Accum;
+chunk(Binary, Accum) when bit_size(Binary) rem 7 /= 0 -> chunk(pad_bits(left, 7, Binary), Accum);
+chunk(Binary, Accum) -> 
+	Size = bit_size(Binary)-7, 
+	<<Rest:Size/bitstring, Term:7/bitstring>> = Binary, 
+	chunk(Rest, [Term | Accum]).
+
+pad_bits(_,Width,Binary) when bit_size(Binary) rem Width =:= 0 -> Binary;
+pad_bits(left,Width,Binary) -> <<0:(Width - (bit_size(Binary) rem Width)),Binary/bitstring>>;
+pad_bits(right,Width,Binary) -> <<Binary/bitstring,0:(Width - (bit_size(Binary) rem Width))>>.
