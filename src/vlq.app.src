@@ -1,12 +1,12 @@
 {application, vlq,
  [
-  {description, ""},
-  {vsn, "1"},
+  {description, "Erlang Variable Length Quantity encode/decoder"},
+  {vsn, "1.1"},
   {registered, []},
   {applications, [
                   kernel,
                   stdlib
                  ]},
-  {mod, { vlq_app, []}},
+  {mod, { vlq, []}},
   {env, []}
  ]}.
