@@ -6,11 +6,17 @@ encode(Integer) when is_integer(Integer) -> doEncode(binary:encode_unsigned(Inte
 encode(Binary) when is_binary(Binary) -> doEncode(Binary, <<>>);
 encode(List)  when is_list(List) -> Encoded = [encode(Item) || Item <- List], lists:foldl(fun(Item, Acc)-> <<Acc/bits, Item/bits>> end, <<>>, Encoded).
 
-decode(Binary) when is_binary(Binary) -> false;
-decode(List)  when is_list(List) -> false.
+decode(Binary) when is_binary(Binary) -> [ binaryTrim(Term) || Term <- lists:reverse(doDecode(Binary, <<>>, [])) ].
 
 
 %%%%%%%%%%%%%% Private Methods %%%%%%%%%%%%%%%%%%%
+
+doDecode(<<>>, <<>>, Acc) -> Acc;
+doDecode(<<1:1, Term:7/bits, Rest/bits>>, Buff, Acc) -> doDecode(Rest, <<Buff/bits, Term:7/bits>>, Acc);
+doDecode(<<0:1, Term:7/bits, Rest/bits>>, Buff, Acc) -> doDecode(Rest, <<>>, [pad_bits(left, 8, <<Buff/bits, Term:7/bits>>)|Acc]).
+
+binaryTrim(<<0:8, Rest/bits>>) -> binaryTrim(Rest);
+binaryTrim(Term) -> Term.
 
 doEncode(Binary, Accum) -> List = chunk(Binary, []), mark(List, Accum).
 
