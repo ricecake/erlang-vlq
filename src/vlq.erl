@@ -2,9 +2,9 @@
 
 -export([encode/1, decode/1]).
 
-encode(Integer) when is_integer(Integer); Integer >= 0 -> doEncode(binary:encode_unsigned(Integer), <<>>);
+encode(Integer) when is_integer(Integer) -> doEncode(binary:encode_unsigned(Integer), <<>>);
 encode(Binary) when is_binary(Binary) -> doEncode(Binary, <<>>);
-encode(List)  when is_list(List) -> false.
+encode(List)  when is_list(List) -> Encoded = [encode(Item) || Item <- List], lists:foldl(fun(Item, Acc)-> <<Acc/bits, Item/bits>> end, <<>>, Encoded).
 
 decode(Binary) when is_binary(Binary) -> false;
 decode(List)  when is_list(List) -> false.
